@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: md-portal
+  namespace: default
+  labels:
+    app: md-portal
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      name: nginx
+  selector:
+    app: md-portal
+    tier: frontend
+  type: LoadBalancer
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: md-portal-configmap
+  namespace: default
+data:
+  REACT_APP_API: 'https://api.rocketdoctor.dev'
+  REACT_APP_APIV2: 'https://apiv2.rocketdoctor.dev'
+  REACT_APP_SYSTEM_ENV: 'ca'
+  REACT_APP_MD_BILLING_URL: 'https://qatest.mdbilling.ca'
+  REACT_APP_ADRACARE_PATH: 'rocketdoctor.adracare.com/provider/appointments/'
+  REACT_APP_DAILY_BASE_URL: 'https://rocketdoctor.daily.co'
+  REACT_APP_SENTRY_DSN: 'https://7a0b80245e4e4054b0fc1f3bdd9d3813@o771397.ingest.sentry.io/5872950'
+  REACT_APP_SENTRY_PROJECT: 'frontend-staging'
+  CI: 'true'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: md-portal-deployment
+  namespace: default
+  labels:
+    app: md-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: md-portal
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: md-portal
+        tier: frontend
+    spec: # Pod spec
+      containers:
+        - name: md-portal-container
+          image: condorl/md-portal-ng:2.0
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: md-portal-configmap
